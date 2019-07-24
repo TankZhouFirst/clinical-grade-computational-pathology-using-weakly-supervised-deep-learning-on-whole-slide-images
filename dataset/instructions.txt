@@ -1,0 +1,59 @@
+######################################################################################
+######################################################################################
+######										######
+######		BREAST CANCER METASTASES DATASET DOWNLOAD INSTRUCTIONS  	######
+######										######
+######################################################################################
+######################################################################################
+
+This dataset is hosted in a Microsoft Azure Blob Storage Container. Please find below
+the credentials for this container, as well as instructions for downloading the
+dataset using the attached python script.
+
+
+######################################################################################
+#				      CREDENTIALS				     #
+######################################################################################
+
+
+STORAGE SERVICE NAME
+publicresearchdataset
+
+CONTAINER NAME
+2019-campanella-nature-medicine
+
+CONNECTION STRING
+BlobEndpoint=https://publicresearchdata.blob.core.windows.net/;TableEndpoint=https://publicresearchdata.table.core.windows.net/;SharedAccessSignature=sv=2018-03-28&ss=b&srt=so&sp=rl&se=2019-07-28T08:52:42Z&st=2019-06-28T00:52:42Z&spr=https&sig=o%2F5t40kYxt3pLXfwBa9NZFm1PJJvExhWOergB0R%2Bw4I%3D
+
+SHARED ACCESS SIGNATURE (SAS) URI
+https://publicresearchdata.blob.core.windows.net/?sv=2018-03-28&ss=b&srt=so&sp=rl&se=2019-07-28T08:52:42Z&st=2019-06-28T00:52:42Z&spr=https&sig=o%2F5t40kYxt3pLXfwBa9NZFm1PJJvExhWOergB0R%2Bw4I%3D
+
+SHARED ACCESS SIGNATURE (SAS) TOKEN
+?sv=2018-03-28&ss=b&srt=so&sp=rl&se=2019-07-28T08:52:42Z&st=2019-06-28T00:52:42Z&spr=https&sig=o%2F5t40kYxt3pLXfwBa9NZFm1PJJvExhWOergB0R%2Bw4I%3D
+
+
+######################################################################################
+#			      PYTHON DOWNLOAD INSTRUCTIONS			     #
+######################################################################################
+
+
+Prerequisites (installation instructions found in next section):
+- python 2.x or 3.x
+- azure python package
+
+Execute the attached script (download_dataset.py) to download from the azure container.
+Please note: this script will download 52.4GB (132 files) to the current working directory.
+This download may take several hours, so be sure to use a strong internet connection. 
+
+
+######################################################################################
+#			 PREREQUISITE INSTALLATION INSTRUCTIONS			     #
+######################################################################################
+
+To install python: https://www.python.org/downloads/
+
+To install azure python package, execute:
+	$ pip install azure
+
+If you do not have pip (python package manager) installed, follow the installation
+instructions found here: https://pip.pypa.io/en/stable/installing/
