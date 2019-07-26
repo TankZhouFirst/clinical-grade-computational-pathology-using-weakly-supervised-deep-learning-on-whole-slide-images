@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser(description='MIL-nature-medicine-2019 tile clas
 parser.add_argument('--train_lib', type=str, default='output/train_data_lib.db', help='path to train MIL library binary')
 parser.add_argument('--val_lib', type=str, default='output/val_data_lib.db', help='path to validation MIL library binary. If present.')
 parser.add_argument('--output', type=str, default='output/', help='name of output file')
-parser.add_argument('--batch_size', type=int, default=2800, help='mini-batch size (default: 512)')
+parser.add_argument('--batch_size', type=int, default=2048, help='mini-batch size (default: 512)')
 parser.add_argument('--nepochs', type=int, default=50, help='number of epochs')
 parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
 parser.add_argument('--test_every', default=10, type=int, help='test on val every (default: 10)')
@@ -45,7 +45,7 @@ def main():
     model = models.resnet34(True)
     model.fc = nn.Linear(model.fc.in_features, 2)
     model.cuda()
-    model = nn.DataParallel(model)
+    model = nn.DataParallel(model, device_ids=[0, 1])
 
     if args.weights==0.5:
         criterion = nn.CrossEntropyLoss().cuda()

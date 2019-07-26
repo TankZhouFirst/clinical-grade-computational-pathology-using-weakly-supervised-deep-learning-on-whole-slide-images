@@ -13,19 +13,37 @@ import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 import torchvision.models as models
+from collections import OrderedDict
 
 parser = argparse.ArgumentParser(description='MIL-nature-medicine-2019 RNN aggregator training script')
-parser.add_argument('--train_lib', type=str, default='', help='path to train MIL library binary')
-parser.add_argument('--val_lib', type=str, default='', help='path to validation MIL library binary. If present.')
-parser.add_argument('--output', type=str, default='.', help='name of output file')
+
+
+# parser.add_argument('--train_lib', type=str, default='', help='path to train MIL library binary')
+# parser.add_argument('--val_lib', type=str, default='', help='path to validation MIL library binary. If present.')
+# parser.add_argument('--output', type=str, default='.', help='name of output file')
+# parser.add_argument('--batch_size', type=int, default=128, help='mini-batch size (default: 128)')
+# parser.add_argument('--nepochs', type=int, default=100, help='number of epochs')
+# parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
+# parser.add_argument('--s', default=10, type=int, help='how many top k tiles to consider (default: 10)')
+# parser.add_argument('--ndims', default=128, type=int, help='length of hidden representation (default: 128)')
+# parser.add_argument('--model', type=str, help='path to trained model checkpoint')
+# parser.add_argument('--weights', default=0.5, type=float, help='unbalanced positive class weight (default: 0.5, balanced classes)')
+# parser.add_argument('--shuffle', action='store_true', help='to shuffle order of sequence')
+
+
+parser.add_argument('--train_lib', type=str, default='output/train_data_lib.db', help='path to train MIL library binary')
+parser.add_argument('--val_lib', type=str, default='output/val_data_lib.db', help='path to validation MIL library binary. If present.')
+parser.add_argument('--output', type=str, default='output/', help='name of output file')
 parser.add_argument('--batch_size', type=int, default=128, help='mini-batch size (default: 128)')
 parser.add_argument('--nepochs', type=int, default=100, help='number of epochs')
 parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
 parser.add_argument('--s', default=10, type=int, help='how many top k tiles to consider (default: 10)')
 parser.add_argument('--ndims', default=128, type=int, help='length of hidden representation (default: 128)')
-parser.add_argument('--model', type=str, help='path to trained model checkpoint')
+parser.add_argument('--model', default='output/checkpoint_best.pth', type=str, help='path to trained model checkpoint')
 parser.add_argument('--weights', default=0.5, type=float, help='unbalanced positive class weight (default: 0.5, balanced classes)')
-parser.add_argument('--shuffle', action='store_true', help='to shuffle order of sequence')
+parser.add_argument('--shuffle', default=True, action='store_true', help='to shuffle order of sequence')
+
+Use_DataParall = False
 
 best_acc = 0
 def main():
@@ -58,8 +76,9 @@ def main():
 
     rnn = rnn_single(args.ndims)
     rnn = rnn.cuda()
-    model = nn.DataParallel(model)
-    
+    if Use_DataParall:
+        rnn = nn.DataParallel(rnn)
+
     #optimization
     if args.weights==0.5:
         criterion = nn.CrossEntropyLoss().cuda()
@@ -104,7 +123,10 @@ def train_single(epoch, embedder, rnn, loader, criterion, optimizer):
         batch_size = inputs[0].size(0)
         rnn.zero_grad()
 
-        state = rnn.init_hidden(batch_size).cuda()
+        if Use_DataParall:
+            state = rnn.module.init_hidden(batch_size)
+        else:
+            state = rnn.init_hidden(batch_size).cuda()
         for s in range(len(inputs)):
             input = inputs[s].cuda()
             _, input = embedder(input)
@@ -137,8 +159,11 @@ def test_single(epoch, embedder, rnn, loader, criterion):
             print('Validating - Epoch: [{}/{}]\tBatch: [{}/{}]'.format(epoch+1,args.nepochs,i+1,len(loader)))
             
             batch_size = inputs[0].size(0)
-            
-            state = rnn.init_hidden(batch_size).cuda()
+
+            if Use_DataParall:
+                state = rnn.module.init_hidden(batch_size)
+            else:
+                state = rnn.init_hidden(batch_size).cuda()
             for s in range(len(inputs)):
                 input = inputs[s].cuda()
                 _, input = embedder(input)
@@ -175,7 +200,8 @@ class ResNetEncoder(nn.Module):
         temp = models.resnet34()
         temp.fc = nn.Linear(temp.fc.in_features, 2)
         ch = torch.load(path)
-        temp.load_state_dict(ch['state_dict'])
+        ch = Parallel2Single(ch['state_dict'])
+        temp.load_state_dict(ch)
         self.features = nn.Sequential(*list(temp.children())[:-1])
         self.fc = temp.fc
 
@@ -206,6 +232,17 @@ class rnn_single(nn.Module):
 
     def init_hidden(self, batch_size):
         return torch.zeros(batch_size, self.ndims)
+
+
+def Parallel2Single(origin_state):
+    converted = OrderedDict()
+
+    for k, v in origin_state.items():
+        name = k[7:]
+        converted[name] = v
+
+    return converted
+
 
 class rnndata(data.Dataset):
 
