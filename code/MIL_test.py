@@ -15,11 +15,18 @@ import torchvision.transforms as transforms
 import torchvision.models as models
 
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('--lib', type=str, default='filelist', help='path to data file')
-parser.add_argument('--output', type=str, default='.', help='name of output directory')
-parser.add_argument('--model', type=str, default='', help='path to pretrained model')
-parser.add_argument('--batch_size', type=int, default=100, help='how many images to sample per slide (default: 100)')
+# parser.add_argument('--lib', type=str, default='filelist', help='path to data file')
+# parser.add_argument('--output', type=str, default='.', help='name of output directory')
+# parser.add_argument('--model', type=str, default='', help='path to pretrained model')
+# parser.add_argument('--batch_size', type=int, default=100, help='how many images to sample per slide (default: 100)')
+# parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
+
+parser.add_argument('--lib', type=str, default='output/val_data_lib.db', help='path to data file')
+parser.add_argument('--output', type=str, default='output/', help='name of output directory')
+parser.add_argument('--model', type=str, default='output/checkpoint_best.pth', help='path to pretrained model')
+parser.add_argument('--batch_size', type=int, default=2048, help='how many images to sample per slide (default: 100)')
 parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
+
 
 def main():
     global args
@@ -28,10 +35,10 @@ def main():
     #load model
     model = models.resnet34(True)
     model.fc = nn.Linear(model.fc.in_features, 2)
+    model = model.cuda()
+    model = nn.DataParallel(model.cuda())
     ch = torch.load(args.model)
     model.load_state_dict(ch['state_dict'])
-    model = model.cuda()
-    model = nn.DataParallel(model)
     cudnn.benchmark = True
 
     #normalization
