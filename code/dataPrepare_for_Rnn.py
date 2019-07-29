@@ -50,30 +50,18 @@ for i, slide_name in enumerate(lib_train['slides']):
     t0 = time()
     sl = openslide.OpenSlide(slide_name)
 
-    # 存储当前 slide 中每个 patch 对应的 prob
-    sl_prob = []
-
-    # 表示新的 batch
-    new_batch_flag = True
+    sl_prob = []      # 存储当前 slide 中每个 patch 对应的 prob
+    imgs_batch = []   # 存储当前 batch
 
     # 处理每个 patch
     for j, grid in enumerate(lib_train['grid'][i]):
-        # 创建一个 batch
-        if new_batch_flag:
-            imgs_batch = trans(sl.read_region(grid, lib_train['level'], (patch_size, patch_size)).convert('RGB')).unsqueeze(0)
-            new_batch_flag = False
-        else:
-            imgs_batch = torch.cat((imgs_batch, trans(sl.read_region(grid, lib_train['level'], (patch_size, patch_size)).convert('RGB')).unsqueeze(0)), 0)
+        imgs_batch.append(trans(sl.read_region(grid, lib_train['level'], (patch_size, patch_size)).convert('RGB')).unsqueeze(0))
 
         if ((j + 1) == len(lib_train['grid'][i])) or ((j + 1) % batch_size == 0):
-            # 处理该 batch
-            imgs_batch = imgs_batch.cuda()
-            # 进行推理
+            imgs_batch = torch.cat(imgs_batch, 0).cuda()
             output = F.softmax(model(imgs_batch), dim=1).detach()
             sl_prob.extend(output[:, 1].cpu().tolist())
-
-            # 开始新的 batch
-            new_batch_flag = True
+            imgs_batch = []
             print('Processing {} / {} slide, patch {} / {}'.format(i + 1, len(lib_train['slides']), j + 1, len(lib_train['grid'][i])))
 
     # 提取前 top_k 个 patch
@@ -87,36 +75,23 @@ for i, slide_name in enumerate(lib_train['slides']):
 torch.save(lib_train, 'output/lib/rnn_train_data_lib.db')
 
 
-
 # 处理 val 部分的数据
 for i, slide_name in enumerate(lib_val['slides']):
     t0 = time()
     sl = openslide.OpenSlide(slide_name)
 
-    # 存储当前 slide 中每个 patch 对应的 prob
-    sl_prob = []
-
-    # 表示新的 batch
-    new_batch_flag = True
+    sl_prob = []      # 存储当前 slide 中每个 patch 对应的 prob
+    imgs_batch = []   # 存储当前 batch
 
     # 处理每个 patch
     for j, grid in enumerate(lib_val['grid'][i]):
-        # 创建一个 batch
-        if new_batch_flag:
-            imgs_batch = trans(sl.read_region(grid, lib_val['level'], (patch_size, patch_size)).convert('RGB')).unsqueeze(0)
-            new_batch_flag = False
-        else:
-            imgs_batch = torch.cat((imgs_batch, trans(sl.read_region(grid, lib_val['level'], (patch_size, patch_size)).convert('RGB')).unsqueeze(0)), 0)
+        imgs_batch.append(trans(sl.read_region(grid, lib_val['level'], (patch_size, patch_size)).convert('RGB')).unsqueeze(0))
 
         if ((j + 1) == len(lib_val['grid'][i])) or ((j + 1) % batch_size == 0):
-            # 处理该 batch
-            imgs_batch = imgs_batch.cuda()
-            # 进行推理
+            imgs_batch = torch.cat(imgs_batch, 0).cuda()
             output = F.softmax(model(imgs_batch), dim=1).detach()
             sl_prob.extend(output[:, 1].cpu().tolist())
-
-            # 开始新的 batch
-            new_batch_flag = True
+            imgs_batch = []
             print('Processing {} / {} slide, patch {} / {}'.format(i + 1, len(lib_val['slides']), j + 1, len(lib_val['grid'][i])))
 
     # 提取前 top_k 个 patch
@@ -127,10 +102,4 @@ for i, slide_name in enumerate(lib_val['slides']):
     lib_val['grid'][i] = grid_array[sorted_index[-top_k:]]
 
     print('time for slide {} is '.format(i, time() - t0))
-torch.save(lib_val, 'output/lib/rnn_val_data_lib.db')
-
-
-
-
-
-
+torch.save(lib_val, 'output/lib/rnn_train_data_lib.db')
