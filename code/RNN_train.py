@@ -256,7 +256,7 @@ class rnndata(data.Dataset):
         self.grid = lib['grid']
         self.level = lib['level']
         self.mult = lib['mult']
-        self.size = int(224*lib['mult'])
+        self.size = int(224 * lib['mult'])
         self.shuffle = shuffle
 
         slides = []

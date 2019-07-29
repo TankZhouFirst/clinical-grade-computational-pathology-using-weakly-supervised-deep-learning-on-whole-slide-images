@@ -21,9 +21,9 @@ parser = argparse.ArgumentParser(description='')
 # parser.add_argument('--batch_size', type=int, default=100, help='how many images to sample per slide (default: 100)')
 # parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
 
-parser.add_argument('--lib', type=str, default='output/val_data_lib.db', help='path to data file')
+parser.add_argument('--lib', type=str, default='output/lib/cnn_val_data_lib.db', help='path to data file')
 parser.add_argument('--output', type=str, default='output/', help='name of output directory')
-parser.add_argument('--model', type=str, default='output/checkpoint_best.pth', help='path to pretrained model')
+parser.add_argument('--model', type=str, default='output/CNN_checkpoint_best.pth', help='path to pretrained model')
 parser.add_argument('--batch_size', type=int, default=2048, help='how many images to sample per slide (default: 100)')
 parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
 
@@ -36,7 +36,7 @@ def main():
     model = models.resnet34(True)
     model.fc = nn.Linear(model.fc.in_features, 2)
     model = model.cuda()
-    model = nn.DataParallel(model.cuda())
+    model = nn.DataParallel(model)
     ch = torch.load(args.model)
     model.load_state_dict(ch['state_dict'])
     cudnn.benchmark = True
@@ -56,7 +56,7 @@ def main():
     probs = inference(loader, model)
     maxs = group_max(np.array(dset.slideIDX), probs, len(dset.targets))
 
-    fp = open(os.path.join(args.output, 'predictions.csv'), 'w')
+    fp = open(os.path.join(args.output, 'CNN_predictions.csv'), 'w')
     fp.write('file,target,prediction,probability\n')
     for name, target, prob in zip(dset.slidenames, dset.targets, maxs):
         fp.write('{},{},{},{}\n'.format(name, target, int(prob>=0.5), prob))

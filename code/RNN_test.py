@@ -13,6 +13,7 @@ import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 import torchvision.models as models
+from collections import OrderedDict
 
 parser = argparse.ArgumentParser(description='MIL-nature-medicine-2019 RNN aggregator training script')
 # parser.add_argument('--lib', type=str, default='', help='path to train MIL library binary')
@@ -33,6 +34,8 @@ parser.add_argument('--ndims', default=128, type=int, help='length of hidden rep
 parser.add_argument('--model', default='output/checkpoint_best.pth', type=str, help='path to trained model checkpoint')
 parser.add_argument('--rnn', default='output/rnn_checkpoint_best.pth', type=str, help='path to trained RNN model checkpoint')
 
+
+Use_DataParall = False
 
 
 def main():
@@ -62,7 +65,8 @@ def main():
     rnn_dict = torch.load(args.rnn)
     rnn.load_state_dict(rnn_dict['state_dict'])
     rnn = rnn.cuda()
-    model = nn.DataParallel(model.cuda())
+    if Use_DataParall:
+        rnn = nn.DataParallel(rnn)
     
     cudnn.benchmark = True
 
@@ -104,7 +108,8 @@ class ResNetEncoder(nn.Module):
         temp = models.resnet34()
         temp.fc = nn.Linear(temp.fc.in_features, 2)
         ch = torch.load(path)
-        temp.load_state_dict(ch['state_dict'])
+        ch = Parallel2Single(ch['state_dict'])
+        temp.load_state_dict(ch)
         self.features = nn.Sequential(*list(temp.children())[:-1])
         self.fc = temp.fc
 
@@ -135,6 +140,18 @@ class rnn_single(nn.Module):
 
     def init_hidden(self, batch_size):
         return torch.zeros(batch_size, self.ndims)
+
+
+def Parallel2Single(origin_state):
+    converted = OrderedDict()
+
+    for k, v in origin_state.items():
+        name = k[7:]
+        converted[name] = v
+
+    return converted
+
+
 
 class rnndata(data.Dataset):
 

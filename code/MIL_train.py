@@ -26,10 +26,10 @@ import torchvision.models as models
 # parser.add_argument('--k', default=1, type=int, help='top k tiles are assumed to be of the same class as the slide (default: 1, standard MIL)')
 
 parser = argparse.ArgumentParser(description='MIL-nature-medicine-2019 tile classifier training script')
-parser.add_argument('--train_lib', type=str, default='output/train_data_lib.db', help='path to train MIL library binary')
-parser.add_argument('--val_lib', type=str, default='output/val_data_lib.db', help='path to validation MIL library binary. If present.')
+parser.add_argument('--train_lib', type=str, default='output/lib/cnn_train_data_lib.db', help='path to train MIL library binary')
+parser.add_argument('--val_lib', type=str, default='output/lib/cnn_val_data_lib.db', help='path to validation MIL library binary. If present.')
 parser.add_argument('--output', type=str, default='output/', help='name of output file')
-parser.add_argument('--batch_size', type=int, default=2048, help='mini-batch size (default: 512)')
+parser.add_argument('--batch_size', type=int, default=256, help='mini-batch size (default: 512)')
 parser.add_argument('--nepochs', type=int, default=50, help='number of epochs')
 parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
 parser.add_argument('--test_every', default=10, type=int, help='test on val every (default: 10)')
@@ -45,12 +45,12 @@ def main():
     model = models.resnet34(True)
     model.fc = nn.Linear(model.fc.in_features, 2)
     model.cuda()
-    model = nn.DataParallel(model, device_ids=[0, 1])
+    model = nn.DataParallel(model)
 
     if args.weights==0.5:
         criterion = nn.CrossEntropyLoss().cuda()
     else:
-        w = torch.Tensor([1-args.weights,args.weights])
+        w = torch.Tensor([1-args.weights, args.weights])
         criterion = nn.CrossEntropyLoss(w).cuda()
     optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-4)
 
@@ -74,7 +74,7 @@ def main():
             num_workers=args.workers, pin_memory=False)
 
     #open output file
-    fconv = open(os.path.join(args.output,'convergence.csv'), 'w')
+    fconv = open(os.path.join(args.output, 'CNN_convergence.csv'), 'w')
     fconv.write('epoch,metric,value\n')
     fconv.close()
 
@@ -88,7 +88,7 @@ def main():
         train_dset.setmode(2)
         loss = train(epoch, train_loader, model, criterion, optimizer)
         print('Training\tEpoch: [{}/{}]\tLoss: {}'.format(epoch+1, args.nepochs, loss))
-        fconv = open(os.path.join(args.output, 'convergence.csv'), 'a')
+        fconv = open(os.path.join(args.output, 'CNN_convergence.csv'), 'a')
         fconv.write('{},loss,{}\n'.format(epoch+1,loss))
         fconv.close()
 
@@ -100,7 +100,7 @@ def main():
             pred = [1 if x >= 0.5 else 0 for x in maxs]
             err,fpr,fnr = calc_err(pred, val_dset.targets)
             print('Validation\tEpoch: [{}/{}]\tError: {}\tFPR: {}\tFNR: {}'.format(epoch+1, args.nepochs, err, fpr, fnr))
-            fconv = open(os.path.join(args.output, 'convergence.csv'), 'a')
+            fconv = open(os.path.join(args.output, 'CNN_convergence.csv'), 'a')
             fconv.write('{},error,{}\n'.format(epoch+1, err))
             fconv.write('{},fpr,{}\n'.format(epoch+1, fpr))
             fconv.write('{},fnr,{}\n'.format(epoch+1, fnr))
@@ -115,7 +115,7 @@ def main():
                     'best_acc': best_acc,
                     'optimizer' : optimizer.state_dict()
                 }
-                torch.save(obj, os.path.join(args.output,'checkpoint_best.pth'))
+                torch.save(obj, os.path.join(args.output,'CNN_checkpoint_best.pth'))
 
 def inference(run, loader, model):
     model.eval()
