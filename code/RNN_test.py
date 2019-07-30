@@ -25,13 +25,13 @@ parser = argparse.ArgumentParser(description='MIL-nature-medicine-2019 RNN aggre
 # parser.add_argument('--model', type=str, help='path to trained model checkpoint')
 # parser.add_argument('--rnn', type=str, help='path to trained RNN model checkpoint')
 
-parser.add_argument('--lib', type=str, default='output/val_data_lib.db', help='path to train MIL library binary')
+parser.add_argument('--lib', type=str, default='output/lib/rnn_val_data_lib.db', help='path to train MIL library binary')
 parser.add_argument('--output', type=str, default='output/', help='name of output file')
 parser.add_argument('--batch_size', type=int, default=128, help='mini-batch size (default: 128)')
 parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
 parser.add_argument('--s', default=10, type=int, help='how many top k tiles to consider (default: 10)')
 parser.add_argument('--ndims', default=128, type=int, help='length of hidden representation (default: 128)')
-parser.add_argument('--model', default='output/checkpoint_best.pth', type=str, help='path to trained model checkpoint')
+parser.add_argument('--model', default='output/CNN_checkpoint_best.pth', type=str, help='path to trained model checkpoint')
 parser.add_argument('--rnn', default='output/rnn_checkpoint_best.pth', type=str, help='path to trained RNN model checkpoint')
 
 
@@ -73,7 +73,7 @@ def main():
     #
     probs = test_single(embedder, rnn, loader)
 
-    fp = open(os.path.join(args.output, 'predictions.csv'), 'w')
+    fp = open(os.path.join(args.output, 'rnn_predictions.csv'), 'w')
     fp.write('file,target,prediction,probability\n')
     for name, target, prob in zip(dset.slidenames, dset.targets, probs):
         fp.write('{},{},{},{}\n'.format(name, target, int(prob>=0.5), prob))

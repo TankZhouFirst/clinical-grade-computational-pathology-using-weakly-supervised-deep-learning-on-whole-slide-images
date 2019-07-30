@@ -31,15 +31,15 @@ parser = argparse.ArgumentParser(description='MIL-nature-medicine-2019 RNN aggre
 # parser.add_argument('--shuffle', action='store_true', help='to shuffle order of sequence')
 
 
-parser.add_argument('--train_lib', type=str, default='output/train_data_lib.db', help='path to train MIL library binary')
-parser.add_argument('--val_lib', type=str, default='output/val_data_lib.db', help='path to validation MIL library binary. If present.')
+parser.add_argument('--train_lib', type=str, default='output/lib/rnn_train_data_lib.db', help='path to train MIL library binary')
+parser.add_argument('--val_lib', type=str, default='output/lib/rnn_val_data_lib.db', help='path to validation MIL library binary. If present.')
 parser.add_argument('--output', type=str, default='output/', help='name of output file')
 parser.add_argument('--batch_size', type=int, default=128, help='mini-batch size (default: 128)')
 parser.add_argument('--nepochs', type=int, default=100, help='number of epochs')
 parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
 parser.add_argument('--s', default=10, type=int, help='how many top k tiles to consider (default: 10)')
 parser.add_argument('--ndims', default=128, type=int, help='length of hidden representation (default: 128)')
-parser.add_argument('--model', default='output/checkpoint_best.pth', type=str, help='path to trained model checkpoint')
+parser.add_argument('--model', default='output/CNN_checkpoint_best.pth', type=str, help='path to trained model checkpoint')
 parser.add_argument('--weights', default=0.5, type=float, help='unbalanced positive class weight (default: 0.5, balanced classes)')
 parser.add_argument('--shuffle', default=True, action='store_true', help='to shuffle order of sequence')
 
@@ -88,7 +88,7 @@ def main():
     optimizer = optim.SGD(rnn.parameters(), 0.1, momentum=0.9, dampening=0, weight_decay=1e-4, nesterov=True)
     cudnn.benchmark = True
 
-    fconv = open(os.path.join(args.output, 'convergence.csv'), 'w')
+    fconv = open(os.path.join(args.output, 'RNN_convergence.csv'), 'w')
     fconv.write('epoch,train.loss,train.fpr,train.fnr,val.loss,val.fpr,val.fnr\n')
     fconv.close()
 
@@ -98,7 +98,7 @@ def main():
         train_loss, train_fpr, train_fnr = train_single(epoch, embedder, rnn, train_loader, criterion, optimizer)
         val_loss, val_fpr, val_fnr = test_single(epoch, embedder, rnn, val_loader, criterion)
 
-        fconv = open(os.path.join(args.output,'convergence.csv'), 'a')
+        fconv = open(os.path.join(args.output,'RNN_convergence.csv'), 'a')
         fconv.write('{},{},{},{},{},{},{}\n'.format(epoch+1, train_loss, train_fpr, train_fnr, val_loss, val_fpr, val_fnr))
         fconv.close()
 
