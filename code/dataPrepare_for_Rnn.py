@@ -10,7 +10,6 @@ import numpy as np
 from time import time
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 
 # 一些全部变量
@@ -69,10 +68,10 @@ for i, slide_name in enumerate(lib_train['slides']):
 
     # 提取前 top_k 个 patch
     sl_prob = np.array(sl_prob)
-    sorted_index = np.argsort(sl_prob)
+    sorted_index = np.argsort(-sl_prob)
 
     grid_array = np.array(lib_train['grid'][i])
-    lib_train['grid'][i] = grid_array[sorted_index[-top_k:]].tolist()
+    lib_train['grid'][i] = grid_array[sorted_index[:top_k]].tolist()
 
     print('time for slide {} is '.format(i, time() - t0))
 torch.save(lib_train, 'output/lib/rnn_train_data_lib.db')
@@ -99,10 +98,10 @@ for i, slide_name in enumerate(lib_val['slides']):
 
     # 提取前 top_k 个 patch
     sl_prob = np.array(sl_prob)
-    sorted_index = np.argsort(sl_prob)
+    sorted_index = np.argsort(-sl_prob)
 
     grid_array = np.array(lib_val['grid'][i])
-    lib_val['grid'][i] = grid_array[sorted_index[-top_k:]].tolist()
+    lib_val['grid'][i] = grid_array[sorted_index[:top_k]].tolist()
 
     print('time for slide {} is '.format(i, time() - t0))
 torch.save(lib_val, 'output/lib/rnn_val_data_lib.db')
